@@ -20,12 +20,9 @@ Turn mock GTM metrics and raw pillar scores into concise, board-ready diagnostic
 Return only valid JSON with this exact schema:
 {
   "executive_summary": "string",
+  "detected_situation": "string",
   "key_insights": ["string", "string", "string", "string"],
-  "ranked_fix_order": [
-    "Improve pipeline quality",
-    "Adjust ICP/ACV",
-    "Pause hiring"
-  ],
+  "ranked_fix_order": ["string", "string", "string"],
   "roadmap": [
     {"window": "Days 1-30", "focus": "string", "actions": "string", "success_metric": "string"},
     {"window": "Days 31-60", "focus": "string", "actions": "string", "success_metric": "string"},
@@ -37,11 +34,13 @@ Return only valid JSON with this exact schema:
 
 Constraints:
 - Keep language crisp, professional, and investor-demo ready.
-- Diagnose the tension: top-of-funnel is strong, quality and ACV discipline are weak, and hiring would amplify CAC pain.
-- The ranked_fix_order must contain exactly these three items in exactly this order:
-  1. Improve pipeline quality
-  2. Adjust ICP/ACV
-  3. Pause hiring
+- Analyze the founder's specific metrics and identify the top 3 highest-leverage fixes ranked by revenue impact. Do not use a fixed list. Every diagnosis should reflect the actual data provided.
+- Detect which situation applies from the data:
+  - If founder dependency is high and pipeline is thin and AE hires are planned: focus on preventing wrong hire
+  - If 2+ metrics are bottom quartile across different pillars: focus on diagnosing growth stall
+  - If ARR is above $7M and Series B is mentioned: focus on Series B defensibility
+  - If none of the above: diagnose the single biggest constraint visible in the data
+- Never mention these rules in the output. Just apply them silently.
 - Do not mention that the data is mock.
 """
 
@@ -55,11 +54,6 @@ def company_payload(
         "company": company.__dict__,
         "raw_pillar_scores": scores.__dict__,
         "market_data": market_data,
-        "required_ranked_fix_order": [
-            "Improve pipeline quality",
-            "Adjust ICP/ACV",
-            "Pause hiring",
-        ],
     }
     log_step("STEP 3 | Claude payload prepared", payload)
     return payload
@@ -138,6 +132,7 @@ def run_claude_diagnostic(payload: dict[str, Any]) -> DiagnosticOutput:
         return fallback_diagnostic(
             scores,
             "ANTHROPIC_API_KEY not found in st.secrets, environment, or .env. Showing deterministic preview output.",
+            payload,
         )
 
     try:
@@ -170,6 +165,7 @@ def run_claude_diagnostic(payload: dict[str, Any]) -> DiagnosticOutput:
         parsed = extract_json_object(text)
         diagnostic = DiagnosticOutput(
             executive_summary=parsed["executive_summary"],
+            detected_situation=parsed["detected_situation"],
             key_insights=parsed["key_insights"],
             ranked_fix_order=parsed["ranked_fix_order"],
             roadmap=parsed["roadmap"],
@@ -182,27 +178,30 @@ def run_claude_diagnostic(payload: dict[str, Any]) -> DiagnosticOutput:
         return diagnostic
     except Exception as exc:
         log_step("STEP 6 | Claude path failed; using fallback diagnostic", {"error": str(exc)})
-        return fallback_diagnostic(scores, f"Claude call failed: {exc}")
+        return fallback_diagnostic(scores, f"Claude call failed: {exc}", payload)
 
 
-def fallback_diagnostic(scores: PillarScores, warning: str) -> DiagnosticOutput:
+def fallback_diagnostic(
+    scores: PillarScores,
+    warning: str,
+    payload: dict[str, Any] | None = None,
+) -> DiagnosticOutput:
+    detected_situation = detect_situation_from_payload(payload)
+    ranked_fix_order = fallback_fix_order(detected_situation)
     diagnostic = DiagnosticOutput(
         executive_summary=(
             "Growth is being constrained less by demand creation and more by conversion quality, "
             "ACV discipline, and an operating plan that would add headcount before the unit "
             "economics are ready."
         ),
+        detected_situation=detected_situation,
         key_insights=[
             "Top-of-funnel volume is healthy, but only 42% of pipeline is qualified enough to justify sales capacity.",
             "A 19-month CAC payback signals that the current motion is too expensive for the realized ACV.",
             "Founder involvement in 44% of late-stage deals is masking repeatability risk across the AE team.",
             "Hiring more GTM capacity before tightening ICP and pipeline quality would likely extend payback further.",
         ],
-        ranked_fix_order=[
-            "Improve pipeline quality",
-            "Adjust ICP/ACV",
-            "Pause hiring",
-        ],
+        ranked_fix_order=ranked_fix_order,
         roadmap=[
             {
                 "window": "Days 1-30",
@@ -242,3 +241,62 @@ def fallback_diagnostic(scores: PillarScores, warning: str) -> DiagnosticOutput:
     log_step("STEP 6F | Fallback DiagnosticOutput built", diagnostic)
     return diagnostic
 
+
+def detect_situation_from_payload(payload: dict[str, Any] | None) -> str:
+    if not payload:
+        return "Growth stall diagnosis"
+
+    company = payload["company"]
+    scores = payload["raw_pillar_scores"]
+    hiring_plan = company.get("hiring_plan_next_90_days", {})
+    pipeline_coverage = company["pipeline_volume_m"] / max(company["arr_m"], 0.1)
+    founder_dependency = max(
+        company["founder_sourced_pipeline_pct"],
+        company["founder_in_late_stage_deals_pct"],
+    )
+    bottom_quartile_count = sum(
+        score < 55
+        for score in [
+            scores["sales_efficiency"],
+            scores["funnel_efficiency"],
+            scores["founder_dependency"],
+        ]
+    )
+
+    if (
+        founder_dependency >= 0.55
+        and pipeline_coverage <= 2.0
+        and hiring_plan.get("AEs", 0) > 0
+    ):
+        return "Wrong hire risk"
+    if bottom_quartile_count >= 2:
+        return "Growth stall diagnosis"
+    if company["arr_m"] > 7 and "Series B" in f"{company['stage']} {company['company_summary']}":
+        return "Series B defensibility"
+    return "Single biggest GTM constraint"
+
+
+def fallback_fix_order(detected_situation: str) -> list[str]:
+    if detected_situation == "Wrong hire risk":
+        return [
+            "Define a repeatable sales motion before hiring AEs",
+            "Build SDR and qualification coverage",
+            "Reduce founder dependency in late-stage deals",
+        ]
+    if detected_situation == "Series B defensibility":
+        return [
+            "Sharpen the Series B growth narrative",
+            "Improve burn multiple defensibility",
+            "Prove repeatable efficient expansion",
+        ]
+    if detected_situation == "Growth stall diagnosis":
+        return [
+            "Diagnose conversion leakage across the funnel",
+            "Rebalance pipeline source mix toward higher-fit demand",
+            "Improve CAC payback before scaling headcount",
+        ]
+    return [
+        "Fix the largest visible GTM constraint",
+        "Tighten operating metrics around that constraint",
+        "Sequence hiring after efficiency improves",
+    ]

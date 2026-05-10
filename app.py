@@ -4,11 +4,12 @@ import streamlit as st
 
 from growth_goaled.diagnostics import company_payload, run_claude_diagnostic
 from growth_goaled.logging_utils import log_step
-from growth_goaled.mock_data import get_mock_company, get_mock_market_data
+from growth_goaled.mock_data import get_mock_market_data
 from growth_goaled.scoring import calculate_pillar_scores
 from growth_goaled.styles import inject_css
 from growth_goaled.ui import (
     render_home,
+    render_company_selector,
     render_logic_page,
     render_roadmap,
     render_sidebar,
@@ -26,27 +27,28 @@ def main() -> None:
     )
     inject_css()
 
-    company = get_mock_company()
-    market_data = get_mock_market_data()
-    scores = calculate_pillar_scores(company)
-    payload = company_payload(company, scores, market_data)
-
     if "page" not in st.session_state:
         st.session_state.page = "Home"
     if "snapshot_has_run" not in st.session_state:
         st.session_state.snapshot_has_run = False
+
+    company, selected_company, diagnostic_ready = render_company_selector()
+    market_data = get_mock_market_data()
+    scores = calculate_pillar_scores(company)
+    payload = company_payload(company, scores, market_data)
 
     log_step(
         "APP | Session state",
         {
             "page": st.session_state.page,
             "snapshot_has_run": st.session_state.snapshot_has_run,
+            "selected_company": selected_company,
         },
     )
     render_sidebar(company, market_data)
 
     diagnostic = None
-    if st.session_state.snapshot_has_run:
+    if diagnostic_ready:
         log_step("APP | Requesting diagnostic output; may return cached result")
         diagnostic = run_claude_diagnostic(payload)
 
@@ -54,18 +56,30 @@ def main() -> None:
         render_home(company)
     elif st.session_state.page == "Analysis":
         if diagnostic is None:
+            if not diagnostic_ready:
+                st.warning("Enter your company data in the sidebar and click Run diagnostic.")
+                log_step("APP | Analysis requested before custom data submit; waiting for form submit")
+                return
             st.session_state.snapshot_has_run = True
             log_step("APP | Analysis requested before demo run; generating diagnostic")
             diagnostic = run_claude_diagnostic(payload)
         render_snapshot(company, diagnostic)
     elif st.session_state.page == "90-Day Execution Roadmap":
         if diagnostic is None:
+            if not diagnostic_ready:
+                st.warning("Enter your company data in the sidebar and click Run diagnostic.")
+                log_step("APP | Roadmap requested before custom data submit; waiting for form submit")
+                return
             st.session_state.snapshot_has_run = True
             log_step("APP | Roadmap requested before demo run; generating diagnostic")
             diagnostic = run_claude_diagnostic(payload)
         render_roadmap(company, diagnostic)
     else:
         if diagnostic is None:
+            if not diagnostic_ready:
+                st.warning("Enter your company data in the sidebar and click Run diagnostic.")
+                log_step("APP | How It Works requested before custom data submit; waiting for form submit")
+                return
             st.session_state.snapshot_has_run = True
             log_step("APP | How It Works requested before demo run; generating diagnostic")
             diagnostic = run_claude_diagnostic(payload)

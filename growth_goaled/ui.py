@@ -9,6 +9,7 @@ import streamlit as st
 from growth_goaled.export import build_export_pdf
 from growth_goaled.logging_utils import log_step
 from growth_goaled.models import CompanyProfile, DiagnosticOutput, PillarScores
+from growth_goaled.mock_data import COMPANY_OPTIONS, build_custom_company, get_mock_company
 from growth_goaled.scoring import calculate_pillar_scores, score_color
 
 
@@ -24,6 +25,92 @@ def peer_benchmark_df(scores: PillarScores) -> pd.DataFrame:
             "Series A Peer Benchmark": [72, 68, 74],
         }
     )
+
+
+def render_company_selector() -> tuple[CompanyProfile, str, bool]:
+    with st.sidebar:
+        st.markdown("#### Company")
+        selected_option = st.selectbox(
+            "Choose a demo company",
+            COMPANY_OPTIONS,
+            index=1,
+            key="company_selector",
+        )
+        if st.session_state.get("last_company_selector") != selected_option:
+            st.session_state.last_company_selector = selected_option
+            st.session_state.snapshot_has_run = selected_option != "Enter your own data"
+
+        if selected_option != "Enter your own data":
+            company = get_mock_company(selected_option)
+            st.session_state.snapshot_has_run = True
+            return company, selected_option, True
+
+        st.caption("Enter founder data and run the diagnostic.")
+        with st.form("custom_company_form"):
+            arr_m = st.number_input("ARR ($M)", min_value=0.1, value=5.0, step=0.5)
+            acv_k = st.number_input("ACV ($K)", min_value=1.0, value=45.0, step=5.0)
+            aes = st.number_input("AEs", min_value=0, value=4, step=1)
+            sdrs = st.number_input("SDRs", min_value=0, value=2, step=1)
+            pipeline_volume_m = st.number_input("Pipeline ($M)", min_value=0.1, value=8.0, step=0.5)
+            qualified_pipeline_m = st.number_input(
+                "Qualified pipeline ($M)",
+                min_value=0.1,
+                value=3.6,
+                step=0.5,
+            )
+            win_rate = st.slider("Win rate", min_value=0.01, max_value=0.60, value=0.22, step=0.01)
+            outbound_source_pct = st.slider(
+                "Outbound source mix",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.60,
+                step=0.05,
+            )
+            founder_dependency_pct = st.slider(
+                "Founder dependency",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.45,
+                step=0.05,
+            )
+            planned_aes = st.number_input("Planned AE hires", min_value=0, value=1, step=1)
+            planned_sdrs = st.number_input("Planned SDR hires", min_value=0, value=1, step=1)
+            submitted = st.form_submit_button("Run diagnostic", use_container_width=True)
+
+        if submitted:
+            st.session_state.custom_company = build_custom_company(
+                arr_m=arr_m,
+                acv_k=acv_k,
+                aes=aes,
+                sdrs=sdrs,
+                pipeline_volume_m=pipeline_volume_m,
+                qualified_pipeline_m=min(qualified_pipeline_m, pipeline_volume_m),
+                win_rate=win_rate,
+                outbound_source_pct=outbound_source_pct,
+                founder_dependency_pct=founder_dependency_pct,
+                planned_aes=planned_aes,
+                planned_sdrs=planned_sdrs,
+            )
+            st.session_state.snapshot_has_run = True
+            st.session_state.page = "Analysis"
+
+        company = st.session_state.get(
+            "custom_company",
+            build_custom_company(
+                arr_m=arr_m,
+                acv_k=acv_k,
+                aes=aes,
+                sdrs=sdrs,
+                pipeline_volume_m=pipeline_volume_m,
+                qualified_pipeline_m=min(qualified_pipeline_m, pipeline_volume_m),
+                win_rate=win_rate,
+                outbound_source_pct=outbound_source_pct,
+                founder_dependency_pct=founder_dependency_pct,
+                planned_aes=planned_aes,
+                planned_sdrs=planned_sdrs,
+            ),
+        )
+        return company, selected_option, bool(st.session_state.get("snapshot_has_run"))
 
 
 def render_sidebar(company: CompanyProfile, market_data: dict[str, Any]) -> None:
@@ -235,6 +322,7 @@ def render_snapshot(company: CompanyProfile, diagnostic: DiagnosticOutput) -> No
 
     st.markdown("<div class='section-title'>Executive Diagnosis</div>", unsafe_allow_html=True)
     st.markdown(diagnostic.executive_summary)
+    st.caption(f"Situation detected: {diagnostic.detected_situation}")
     st.markdown(
         """
         <div class="explainer-grid">

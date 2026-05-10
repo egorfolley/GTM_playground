@@ -44,6 +44,7 @@ class PillarScores:
 @dataclass
 class DiagnosticOutput:
     executive_summary: str
+    detected_situation: str
     key_insights: list[str]
     ranked_fix_order: list[str]
     roadmap: list[dict[str, str]]
@@ -52,4 +53,3 @@ class DiagnosticOutput:
     source: str = "Claude"
     raw_scores: PillarScores | None = None
     warnings: list[str] = field(default_factory=list)
-
