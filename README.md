@@ -94,6 +94,11 @@ Then open:
 http://localhost:8501
 ```
 
+Or online:
+```text
+https://gtmplayground-njdhknfghmxi36smrjgato.streamlit.app/
+```
+
 ## Notes
 
 - The app uses only mock data.

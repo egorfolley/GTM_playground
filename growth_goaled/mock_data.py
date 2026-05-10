@@ -9,6 +9,23 @@ from growth_goaled.models import CompanyProfile
 PRELOADED_COMPANIES = {
     "UC1: Wrong AE hire risk": {
         "label": "$3M ARR Fintech, founder closing all deals, about to hire 2 AEs, no SDR, pipeline coverage 1.8x",
+        "market_data": {
+            "category": "Fintech SaaS (Early Stage)",
+            "category_avg_cac_payback_months": 18,
+            "category_avg_win_rate": 0.20,
+            "category_avg_acv_k": 32,
+            "top_quartile_cac_payback_months": 11,
+            "top_quartile_win_rate": 0.28,
+            "top_quartile_acv_k": 55,
+            "competitor_hiring_signals": [
+                "Competitors at similar stage are prioritising SDR and RevOps hires before adding AEs.",
+                "Several seed-to-Series-A fintechs are investing in outbound infrastructure and qualification frameworks.",
+                "Market leaders are building repeatable pipeline engines before scaling closing capacity.",
+            ],
+            "vc_sentiment": "Early-stage fintech investors are cautious about companies that scale AE headcount before the sales motion is repeatable. A proven SDR-to-AE handoff and pipeline coverage above 3x are table stakes.",
+            "category_growth_rate_yoy": 0.38,
+            "median_series_a_arr_m": 3.5,
+        },
         "company": CompanyProfile(
             company_summary="$3M ARR Fintech, founder closing all deals, about to hire 2 AEs, no SDR, pipeline coverage 1.8x",
             stage="Series A",
@@ -45,6 +62,23 @@ PRELOADED_COMPANIES = {
     },
     "UC2: Growth stall diagnosis": {
         "label": "$6M ARR Healthtech, growth stalling, strong top-of-funnel, CAC payback 19 months, pipeline source mix 70% outbound",
+        "market_data": {
+            "category": "Healthtech SaaS",
+            "category_avg_cac_payback_months": 18,
+            "category_avg_win_rate": 0.22,
+            "category_avg_acv_k": 42,
+            "top_quartile_cac_payback_months": 12,
+            "top_quartile_win_rate": 0.33,
+            "top_quartile_acv_k": 68,
+            "competitor_hiring_signals": [
+                "Competitors are hiring clinical AEs with compliance and EHR integration experience.",
+                "Several healthtech peers are adding RevOps leaders to improve pipeline qualification and reduce CAC.",
+                "Competitors are investing in partner channel motions through health system and payer networks.",
+            ],
+            "vc_sentiment": "VC appetite for healthtech SaaS is selective. Investors favour companies with demonstrable compliance differentiation and CAC payback trending below 18 months. Growth stalls at Series A raise questions about ICP fit and pipeline quality.",
+            "category_growth_rate_yoy": 0.31,
+            "median_series_a_arr_m": 5.2,
+        },
         "company": CompanyProfile(
             company_summary="$6M ARR Healthtech, growth stalling, strong top-of-funnel, CAC payback 19 months, pipeline source mix 70% outbound",
             stage="Series A",
@@ -81,6 +115,23 @@ PRELOADED_COMPANIES = {
     },
     "UC3: Series B defensibility": {
         "label": "$9M ARR Fintech, preparing for Series B in 9 months, metrics okay but narrative weak, board pressure on burn multiple",
+        "market_data": {
+            "category": "Fintech SaaS (Growth Stage)",
+            "category_avg_cac_payback_months": 14,
+            "category_avg_win_rate": 0.25,
+            "category_avg_acv_k": 52,
+            "top_quartile_cac_payback_months": 9,
+            "top_quartile_win_rate": 0.36,
+            "top_quartile_acv_k": 82,
+            "competitor_hiring_signals": [
+                "Growth-stage fintech competitors are adding enterprise AEs with financial services network depth.",
+                "Competitors are building partner and channel programmes to reduce direct CAC ahead of Series B.",
+                "Several Series B-bound fintechs are hiring VP Revenue and CFO-track finance ahead of fundraising.",
+            ],
+            "vc_sentiment": "Series B fintech investors in 2025 want proof of efficient scaling: burn multiple below 1.5x, NRR above 115%, and a repeatable enterprise motion. Narrative weakness is a real risk — investors read board decks before taking meetings.",
+            "category_growth_rate_yoy": 0.42,
+            "median_series_a_arr_m": 7.8,
+        },
         "company": CompanyProfile(
             company_summary="$9M ARR Fintech, preparing for Series B in 9 months, metrics okay but narrative weak, board pressure on burn multiple",
             stage="Series A, preparing for Series B",
@@ -182,24 +233,30 @@ def build_custom_company(
     return company
 
 
-def get_mock_market_data() -> dict[str, Any]:
-    """Hardcoded category context for the demo."""
-    market_data = {
-        "category": "Fintech SaaS",
-        "category_avg_cac_payback_months": 16,
-        "category_avg_win_rate": 0.21,
-        "category_avg_acv_k": 38,
-        "top_quartile_cac_payback_months": 10,
-        "top_quartile_win_rate": 0.31,
-        "top_quartile_acv_k": 62,
-        "competitor_hiring_signals": [
-            "Competitors are hiring enterprise AEs with fintech compliance experience.",
-            "Competitors are adding partner managers for bank and payments channel motions.",
-            "Competitors are recruiting RevOps leaders to improve pipeline quality and forecasting.",
-        ],
-        "vc_sentiment": "VC appetite remains selective but constructive for fintech SaaS companies with efficient growth and clear enterprise demand.",
-        "category_growth_rate_yoy": 0.34,
-        "median_series_a_arr_m": 5.2,
-    }
-    log_step("STEP 1B | Mock market data loaded", market_data)
+_GENERIC_MARKET_DATA: dict[str, Any] = {
+    "category": "B2B SaaS",
+    "category_avg_cac_payback_months": 17,
+    "category_avg_win_rate": 0.21,
+    "category_avg_acv_k": 40,
+    "top_quartile_cac_payback_months": 11,
+    "top_quartile_win_rate": 0.31,
+    "top_quartile_acv_k": 65,
+    "competitor_hiring_signals": [
+        "Competitors are hiring enterprise AEs with vertical-specific experience.",
+        "Competitors are adding RevOps leaders to improve pipeline quality and forecasting.",
+        "Competitors are recruiting partner managers for channel and ecosystem motions.",
+    ],
+    "vc_sentiment": "VC appetite remains selective but constructive for B2B SaaS companies with efficient growth and clear enterprise demand.",
+    "category_growth_rate_yoy": 0.34,
+    "median_series_a_arr_m": 5.2,
+}
+
+
+def get_mock_market_data(option: str | None = None) -> dict[str, Any]:
+    """Return market data for the selected UC, or generic data for custom / unknown options."""
+    if option and option in PRELOADED_COMPANIES:
+        market_data = PRELOADED_COMPANIES[option]["market_data"]
+    else:
+        market_data = _GENERIC_MARKET_DATA
+    log_step("STEP 1B | Mock market data loaded", {"option": option, **market_data})
     return market_data

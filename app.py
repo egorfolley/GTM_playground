@@ -33,7 +33,7 @@ def main() -> None:
         st.session_state.snapshot_has_run = False
 
     company, selected_company, diagnostic_ready = render_company_selector()
-    market_data = get_mock_market_data()
+    market_data = get_mock_market_data(selected_company)
     scores = calculate_pillar_scores(company)
     payload = company_payload(company, scores, market_data)
 
