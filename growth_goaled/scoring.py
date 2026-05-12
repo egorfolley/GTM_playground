@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from growth_goaled.logging_utils import log_step
 from growth_goaled.models import CompanyProfile, PillarScores
 
@@ -10,9 +12,18 @@ def clamp_score(value: float) -> int:
 
 def calculate_sales_efficiency(company: CompanyProfile) -> int:
     """Higher is better: efficient growth, healthy CAC payback, productive GTM capacity."""
+    acv_denominator = 60
+    acv_k: Any = company.acv_k
+    if acv_k is None:
+        log_step(
+            "STEP 2A | Warning: invalid denominator/input for Sales Efficiency; returning 0",
+            {"acv_k": acv_k, "acv_denominator": acv_denominator},
+        )
+        return 0
+
     payback_component = max(0, 100 - (company.cac_payback_months - 10) * 6)
     growth_component = min(100, company.growth_rate_yoy * 120)
-    acv_component = min(100, company.acv_k / 60 * 100)
+    acv_component = min(100, acv_k / acv_denominator * 100)
     rep_load_penalty = max(0, (company.aes + company.sdrs - 9) * 4)
     score = clamp_score(
         payback_component * 0.45
@@ -36,7 +47,15 @@ def calculate_sales_efficiency(company: CompanyProfile) -> int:
 
 def calculate_funnel_efficiency(company: CompanyProfile) -> int:
     """Higher is better: quality conversion through the funnel, not just raw volume."""
-    qualification_component = company.qualified_pipeline_m / company.pipeline_volume_m * 100
+    pipeline_volume_m: Any = company.pipeline_volume_m
+    if pipeline_volume_m is None or pipeline_volume_m == 0:
+        log_step(
+            "STEP 2B | Warning: pipeline volume is missing or zero; returning 0",
+            {"pipeline_volume_m": pipeline_volume_m},
+        )
+        return 0
+
+    qualification_component = company.qualified_pipeline_m / pipeline_volume_m * 100
     cycle_component = max(0, 100 - (company.sales_cycle_days - 45) * 1.1)
     conversion_component = (
         company.demo_to_sql_rate * 100 * 0.25

@@ -186,20 +186,63 @@ def fallback_diagnostic(
     warning: str,
     payload: dict[str, Any] | None = None,
 ) -> DiagnosticOutput:
-    detected_situation = detect_situation_from_payload(payload)
-    ranked_fix_order = fallback_fix_order(detected_situation)
+    company: dict[str, Any] = payload.get("company", {}) if payload else {}
+    raw_scores: dict[str, Any] = payload.get("raw_pillar_scores", {}) if payload else {}
+
+    arr_m = float(company.get("arr_m", 0.0) or 0.0)
+    cac_payback_months = float(company.get("cac_payback_months", 0.0) or 0.0)
+    founder_dependency_score = int(raw_scores.get("founder_dependency", scores.founder_dependency))
+    sales_efficiency_score = int(raw_scores.get("sales_efficiency", scores.sales_efficiency))
+    funnel_efficiency_score = int(raw_scores.get("funnel_efficiency", scores.funnel_efficiency))
+
+    if cac_payback_months >= 18 and founder_dependency_score < 55:
+        detected_situation = "Efficiency and repeatability constraint"
+    elif cac_payback_months >= 18:
+        detected_situation = "Unit economics constraint"
+    elif founder_dependency_score < 55:
+        detected_situation = "Founder dependency constraint"
+    elif arr_m >= 7 and sales_efficiency_score >= 60 and funnel_efficiency_score >= 60:
+        detected_situation = "Series B defensibility"
+    else:
+        detected_situation = "Single biggest GTM constraint"
+
+    ranked_fix_order: list[str] = []
+    if cac_payback_months >= 18:
+        ranked_fix_order.append("Improve CAC payback before adding GTM headcount")
+    if funnel_efficiency_score < 55:
+        ranked_fix_order.append("Tighten qualification and conversion discipline across the funnel")
+    if founder_dependency_score < 55:
+        ranked_fix_order.append("Reduce founder dependency in late-stage and sourced pipeline")
+    if arr_m >= 7:
+        ranked_fix_order.append("Sharpen the board narrative around efficient scaling")
+
+    deduped_fix_order: list[str] = []
+    for fix in ranked_fix_order:
+        if fix not in deduped_fix_order:
+            deduped_fix_order.append(fix)
+
+    while len(deduped_fix_order) < 3:
+        deduped_fix_order.append("Sequence hiring only after efficiency metrics improve")
+    ranked_fix_order = deduped_fix_order[:3]
+
+    if cac_payback_months >= 18:
+        summary_tail = "The current motion is expensive for this growth stage, so quality and efficiency should be fixed before capacity expansion."
+    elif founder_dependency_score < 55:
+        summary_tail = "Revenue execution is still too founder-dependent, so repeatability should be stabilized before scaling."
+    else:
+        summary_tail = "The company can prioritize targeted optimization while maintaining measured execution cadence."
+
     diagnostic = DiagnosticOutput(
         executive_summary=(
-            "Growth is being constrained less by demand creation and more by conversion quality, "
-            "ACV discipline, and an operating plan that would add headcount before the unit "
-            "economics are ready."
+            f"Fallback diagnostic based on provided inputs: ARR is ${arr_m:.1f}M, CAC payback is {cac_payback_months:.0f} months, "
+            f"and the founder dependency score is {founder_dependency_score}/100. {summary_tail}"
         ),
         detected_situation=detected_situation,
         key_insights=[
-            "Top-of-funnel volume is healthy, but only 42% of pipeline is qualified enough to justify sales capacity.",
-            "A 19-month CAC payback signals that the current motion is too expensive for the realized ACV.",
-            "Founder involvement in 44% of late-stage deals is masking repeatability risk across the AE team.",
-            "Hiring more GTM capacity before tightening ICP and pipeline quality would likely extend payback further.",
+            f"ARR currently stands at ${arr_m:.1f}M, which sets the context for near-term scaling decisions.",
+            f"CAC payback is {cac_payback_months:.0f} months, which {'is above' if cac_payback_months >= 18 else 'is within'} the target range for efficient growth.",
+            f"Founder dependency score is {founder_dependency_score}/100, indicating {'elevated' if founder_dependency_score < 55 else 'manageable'} repeatability risk.",
+            f"Pillar scores are Sales Efficiency {sales_efficiency_score}/100 and Funnel Efficiency {funnel_efficiency_score}/100, guiding the first fix sequence.",
         ],
         ranked_fix_order=ranked_fix_order,
         roadmap=[
@@ -230,9 +273,8 @@ def fallback_diagnostic(
             "Friday: Founder/CRO operating review on payback, ACV, and late-stage dependency.",
         ],
         board_narrative=(
-            "We have enough demand to grow, but the next 90 days should prioritize quality over capacity. "
-            "The plan is to raise qualified pipeline density, increase ACV through tighter ICP focus, and hold "
-            "new GTM hiring until CAC payback trends back toward a Series A-ready range."
+            f"Given ARR of ${arr_m:.1f}M, CAC payback of {cac_payback_months:.0f} months, and founder dependency score of "
+            f"{founder_dependency_score}/100, the next 90 days should prioritize efficiency and repeatability before adding capacity."
         ),
         source="Deterministic preview",
         raw_scores=scores,

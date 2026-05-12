@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pandas as pd
@@ -364,7 +365,10 @@ def render_snapshot(company: CompanyProfile, diagnostic: DiagnosticOutput) -> No
     with left:
         st.markdown("<div class='section-title'>Key Insights</div>", unsafe_allow_html=True)
         for insight in diagnostic.key_insights:
-            st.markdown(f"<div class='insight'>{insight}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='insight'>{re.sub(r'<[^>]+>', '', insight)}</div>",
+                unsafe_allow_html=True,
+            )
 
     with right:
         st.markdown("<div class='section-title'>Ranked Fix Order</div>", unsafe_allow_html=True)
@@ -383,7 +387,7 @@ def render_snapshot(company: CompanyProfile, diagnostic: DiagnosticOutput) -> No
         )
         for idx, fix in enumerate(diagnostic.ranked_fix_order, start=1):
             st.markdown(
-                f"<div class='fix'><strong>{idx}. {fix}</strong></div>",
+                f"<div class='fix'><strong>{idx}. {re.sub(r'<[^>]+>', '', fix)}</strong></div>",
                 unsafe_allow_html=True,
             )
 
@@ -428,10 +432,10 @@ def render_roadmap(company: CompanyProfile, diagnostic: DiagnosticOutput) -> Non
         col.markdown(
             f"""
             <div class="roadmap">
-                <div class="roadmap-window">{item['window']}</div>
-                <h3>{item['focus']}</h3>
-                <p>{item['actions']}</p>
-                <p class="small-muted"><strong>Success metric:</strong> {item['success_metric']}</p>
+                <div class="roadmap-window">{re.sub(r'<[^>]+>', '', item['window'])}</div>
+                <h3>{re.sub(r'<[^>]+>', '', item['focus'])}</h3>
+                <p>{re.sub(r'<[^>]+>', '', item['actions'])}</p>
+                <p class="small-muted"><strong>Success metric:</strong> {re.sub(r'<[^>]+>', '', item['success_metric'])}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -454,7 +458,7 @@ def render_roadmap(company: CompanyProfile, diagnostic: DiagnosticOutput) -> Non
         )
         for item in diagnostic.weekly_rhythm:
             st.markdown(
-                f"<div class='check-row'><span class='check-mark'>&check;</span><span>{item}</span></div>",
+                f"<div class='check-row'><span class='check-mark'>&check;</span><span>{re.sub(r'<[^>]+>', '', item)}</span></div>",
                 unsafe_allow_html=True,
             )
 
@@ -603,7 +607,7 @@ def render_logic_page(
     st.markdown("<div class='section-title'>5. Final Recommendation Logic</div>", unsafe_allow_html=True)
     for idx, fix in enumerate(diagnostic.ranked_fix_order, start=1):
         st.markdown(
-            f"<div class='fix'><strong>{idx}. {fix}</strong></div>",
+            f"<div class='fix'><strong>{idx}. {re.sub(r'<[^>]+>', '', fix)}</strong></div>",
             unsafe_allow_html=True,
         )
     st.markdown(
