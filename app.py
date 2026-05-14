@@ -4,6 +4,7 @@ Fintech B2B SaaS · Payments vertical
 """
 import time
 import concurrent.futures
+import os
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -17,6 +18,28 @@ from app.sales_playbook import run_sales_playbook
 from app.metrics_forecaster import run_metrics_forecaster
 from app.synthesizer import run_synthesizer
 from app.signals import collect_signals
+
+
+def _resolve_anthropic_api_key() -> str:
+    """Resolve Anthropic API key from env first, then Streamlit secrets."""
+    api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    if api_key:
+        return api_key
+
+    try:
+        if "ANTHROPIC_API_KEY" in st.secrets:
+            api_key = str(st.secrets["ANTHROPIC_API_KEY"]).strip()
+        elif "anthropic_api_key" in st.secrets:
+            api_key = str(st.secrets["anthropic_api_key"]).strip()
+    except Exception:
+        api_key = ""
+
+    if api_key:
+        os.environ["ANTHROPIC_API_KEY"] = api_key
+    return api_key
+
+
+ANTHROPIC_API_KEY = _resolve_anthropic_api_key()
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -90,6 +113,13 @@ def _run_synthesizer(use_case: str, context: dict, agent_outputs: dict) -> str:
 st.title("🚀 Growth Goaled — $1M to $10M GTM Copilot")
 st.caption("**Fintech B2B SaaS · Payments vertical** — multi-agent strategy engine")
 st.divider()
+
+if not ANTHROPIC_API_KEY:
+    st.error(
+        "Missing ANTHROPIC_API_KEY. On Streamlit Cloud, add it in App Settings → Secrets "
+        "as ANTHROPIC_API_KEY = \"...\" and redeploy."
+    )
+    st.stop()
 
 # ════════════════════════════════════════════════════════════════════════════
 # MODULE 1 — Situation input
