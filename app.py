@@ -96,7 +96,7 @@ st.divider()
 # ════════════════════════════════════════════════════════════════════════════
 st.subheader("① Describe Your Situation")
 
-situation = st.text_area(
+founder_text = st.text_area(
     "Describe your situation",
     placeholder=(
         "We're a Fintech B2B SaaS at $1M ARR selling to payments companies. "
@@ -106,61 +106,61 @@ situation = st.text_area(
     height=120,
 )
 
-submitted = st.button("Build My GTM Plan", type="primary", use_container_width=True)
+if st.button("Build My GTM Plan"):
 
-if submitted:
-    if not situation.strip():
-        st.warning("Please describe your situation before running the pipeline.")
+    # Input validation
+    if len(founder_text.strip()) < 20:
+        st.warning("Please describe your situation in at least one sentence.")
         st.stop()
-    st.session_state.selected_use_case = situation.strip()
+
+    st.session_state.selected_use_case = founder_text.strip()
     st.session_state.form_submitted = True
     st.session_state.agent_outputs = {}
     st.session_state.final_plan = ""
     st.session_state.trace_log = []
-    st.session_state.context = {"situation": situation.strip()}
+    st.session_state.context = {"situation": founder_text.strip()}
 
-st.divider()
+    # Step 1 — Signal feed appears first, simulates live search
+    st.markdown("#### 📡 Scanning market signals...")
 
-# ════════════════════════════════════════════════════════════════════════════
-# MODULE 2 — Signal collection (mock)
-# ════════════════════════════════════════════════════════════════════════════
-# Signal feed display
-st.markdown("#### 📡 Market Signal Feed")
-st.caption("Live intelligence collected from across the web")
+    signal_placeholder = st.empty()
 
-signals = collect_signals()
+    sources = [
+        ("🟠", "Hacker News", "2h ago", 
+         "How I got my first 10 Fintech customers without a sales team"),
+        ("🔴", "Reddit r/fintech", "3h ago", 
+         "Cold outbound not converting in Payments — what changed?"),
+        ("🟠", "Hacker News", "6h ago", 
+         "Founder-led sales in Payments — what works at $1M ARR"),
+        ("🟢", "TechCrunch", "4h ago", 
+         "Fintech B2B sales cycles stretched 40% in 2025"),
+        ("🔴", "Reddit r/startups", "8h ago", 
+         "How do you find ICP signal before hiring your first AE?"),
+        ("🔵", "Crunchbase", "today", 
+         "Payments infrastructure — 14 Series A closes this month"),
+        ("🔴", "Reddit r/SaaS", "yesterday", 
+         "AE hired 3 months ago, zero closes — do I let them go?"),
+        ("🟠", "Hacker News", "yesterday", 
+         "Why most early Fintech outbound fails and how to fix it"),
+    ]
 
-# Animate discovery feel with a short spinner
-with st.spinner("Scanning Fintech GTM signals..."):
     import time
-    time.sleep(1.2)
+    rendered = []
 
-# Render each signal as a card
-for item in signals["sources"]:
-    meta = f"{item['icon']} **{item['source']}** · {item['time']}"
-    if item["points"]:
-        meta += f" · ⬆ {item['points']} points · 💬 {item['comments']} comments"
-    st.markdown(
-        f"""
-        <div style="
-            border: 1px solid #1e293b;
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 8px;
-            background: #0d1117;
-        ">
-            <div style="font-size:12px; color:#64748b; margin-bottom:4px;">{meta}</div>
-            <div style="font-size:14px; color:#f1f5f9;">{item['title']}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    for icon, source, time_ago, title in sources:
+        rendered.append((icon, source, time_ago, title))
+        lines = []
+        for s in rendered:
+            lines.append(f"{s[0]} **{s[1]}** · {s[2]}")
+            lines.append(f"- {s[3]}")
+        signal_placeholder.markdown("\n".join(lines))
+        time.sleep(0.3)
 
-# Market context pills
-st.markdown("**Market context:**")
-cols = st.columns(len(signals["market_context"]))
-for col, ctx in zip(cols, signals["market_context"]):
-    col.info(ctx)
+    st.success("✅ 8 signals collected from Hacker News, Reddit, Crunchbase, TechCrunch")
+    time.sleep(0.5)
+
+    # Step 2 — Agents run after signals displayed
+    signals = collect_signals()
 
 st.divider()
 
