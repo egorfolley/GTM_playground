@@ -164,6 +164,8 @@ if st.session_state.input_evaluation and not st.session_state.form_submitted:
         st.caption("Please add:")
         for item in evaluation.get("missing", []):
             st.markdown(f"- {item}")
+    st.markdown("**Response format to use**")
+    st.code(evaluation.get("response_format", ""), language="text")
     st.markdown("**Quick input template**")
     st.text(evaluation.get("template", ""))
 
@@ -188,6 +190,8 @@ if st.button("Build My GTM Plan"):
         st.warning("Input is not detailed enough yet. Use the template below and try again.")
         if evaluation.get("reason"):
             st.caption(evaluation.get("reason"))
+        st.markdown("**Response format to use**")
+        st.code(evaluation.get("response_format", ""), language="text")
         st.markdown("**Quick input template**")
         st.text(evaluation.get("template", ""))
         st.stop()

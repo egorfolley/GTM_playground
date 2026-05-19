@@ -20,7 +20,8 @@ Return ONLY valid JSON with this exact schema:
   "is_sufficient": true or false,
   "missing": ["short bullet", "short bullet"],
   "reason": "one short sentence",
-  "template": "short fill-in template founders can copy"
+    "template": "short fill-in template founders can copy",
+    "response_format": "labeled format founders should follow"
 }
 
 Rules:
@@ -57,6 +58,14 @@ def _fallback_evaluation(founder_text: str) -> dict:
             "Today we have [team/channel baseline].\n"
             "In the next [timeframe], we need [goal/metric]."
         ),
+        "response_format": (
+            "Stage/Revenue: [e.g., $1M ARR]\n"
+            "Product: [what you sell]\n"
+            "Target Customer: [who buys]\n"
+            "Main GTM Problem: [what is not working]\n"
+            "Current Setup: [team/channels today]\n"
+            "Goal: [target and timeframe]"
+        ),
     }
 
 
@@ -92,6 +101,17 @@ def run_input_evaluator(use_case: str, context: dict) -> dict:
                 "Our current GTM problem is [specific bottleneck].\n"
                 "Today we have [team/channel baseline].\n"
                 "In the next [timeframe], we need [goal/metric]."
+            ),
+        )
+        parsed.setdefault(
+            "response_format",
+            (
+                "Stage/Revenue: [e.g., $1M ARR]\n"
+                "Product: [what you sell]\n"
+                "Target Customer: [who buys]\n"
+                "Main GTM Problem: [what is not working]\n"
+                "Current Setup: [team/channels today]\n"
+                "Goal: [target and timeframe]"
             ),
         )
         return parsed
