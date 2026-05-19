@@ -157,6 +157,9 @@ founder_text = st.text_area(
     height=120,
 )
 
+st.caption("Hints: include stage/revenue, product, target buyer, current GTM bottleneck, and your goal timeline.")
+st.caption("Example: We are a B2B SaaS at $1M ARR selling to payment ops leaders; outbound is not converting and we need to reach $2M ARR in 12 months.")
+
 if st.session_state.input_evaluation and not st.session_state.form_submitted:
     evaluation = st.session_state.input_evaluation
     st.warning("Not enough detail to build a reliable GTM plan yet.")
@@ -205,7 +208,7 @@ if st.button("Build My GTM Plan"):
     st.session_state.input_evaluation = None
 
     # Step 1 — Signal feed appears first, simulates live search
-    st.markdown("#### 📡 Scanning market signals...")
+    st.markdown("#### 📡 Step 1: Scanning market signals...")
 
     signal_placeholder = st.empty()
 
@@ -229,113 +232,128 @@ if st.button("Build My GTM Plan"):
     # Step 2 — Agents run after signals displayed
     signals = collect_signals()
 
-st.divider()
+if st.session_state.form_submitted:
+    st.divider()
+    st.subheader("② Logical Step-by-Step Actions")
 
-# ════════════════════════════════════════════════════════════════════════════
-# MODULE 3 — Agent pipeline
-# ════════════════════════════════════════════════════════════════════════════
-st.subheader("③ Agent Pipeline")
-
-agent_names = [name for name, _ in AGENT_DEFINITIONS]
-agent_cols = st.columns(len(agent_names))
-
-STATUS_IDLE = "⬜ Idle"
-STATUS_RUNNING = "🔄 Running"
-STATUS_DONE = "✅ Done"
-STATUS_ERROR = "❌ Error"
-
-def _agent_status(name: str) -> str:
-    if not st.session_state.form_submitted:
-        return STATUS_IDLE
-    output = st.session_state.agent_outputs.get(name)
-    if output is None:
-        return STATUS_RUNNING
-    if output.startswith("⚠️"):
-        return STATUS_ERROR
-    return STATUS_DONE
-
-for col, name in zip(agent_cols, agent_names):
-    with col:
-        st.markdown(f"**{name}**")
-        st.caption(_agent_status(name))
-
-# Run agents if form was just submitted and we have no outputs yet
-if st.session_state.form_submitted and not st.session_state.agent_outputs:
-    with st.spinner("Running 5 agents in parallel via concurrent.futures…"):
-        st.session_state.agent_outputs = _run_agents_parallel(
-            st.session_state.selected_use_case,
-            st.session_state.context,
+    step_3_status = "✅ Done" if st.session_state.agent_outputs else "🔄 Running"
+    step_4_status = "✅ Done" if st.session_state.final_plan else "🔄 Running"
+    st.markdown(
+        "\n".join(
+            [
+                "1. ✅ Input quality evaluated",
+                "2. ✅ Market signals scanned",
+                f"3. {step_3_status} Specialist agents executed",
+                f"4. {step_4_status} Final GTM plan synthesized",
+            ]
         )
-    # Re-render status badges after completion
+    )
+
+    st.divider()
+
+    # ════════════════════════════════════════════════════════════════════════
+    # MODULE 3 — Agent pipeline
+    # ════════════════════════════════════════════════════════════════════════
+    st.subheader("③ Agent Pipeline")
+
+    agent_names = [name for name, _ in AGENT_DEFINITIONS]
+    agent_cols = st.columns(len(agent_names))
+
+    STATUS_IDLE = "⬜ Idle"
+    STATUS_RUNNING = "🔄 Running"
+    STATUS_DONE = "✅ Done"
+    STATUS_ERROR = "❌ Error"
+
+    def _agent_status(name: str) -> str:
+        if not st.session_state.form_submitted:
+            return STATUS_IDLE
+        output = st.session_state.agent_outputs.get(name)
+        if output is None:
+            return STATUS_RUNNING
+        if output.startswith("⚠️"):
+            return STATUS_ERROR
+        return STATUS_DONE
+
     for col, name in zip(agent_cols, agent_names):
         with col:
+            st.markdown(f"**{name}**")
             st.caption(_agent_status(name))
 
-# Show individual agent output cards
-if st.session_state.agent_outputs:
-    st.markdown("---")
-    tabs = st.tabs(agent_names)
-    for tab, name in zip(tabs, agent_names):
-        with tab:
-            output = st.session_state.agent_outputs.get(name, "")
-            st.markdown(output)
-            st.caption(confidence_label(output))
+    # Run agents if form was just submitted and we have no outputs yet
+    if not st.session_state.agent_outputs:
+        with st.spinner("Running 5 agents in parallel via concurrent.futures…"):
+            st.session_state.agent_outputs = _run_agents_parallel(
+                st.session_state.selected_use_case,
+                st.session_state.context,
+            )
+        # Re-render status badges after completion
+        for col, name in zip(agent_cols, agent_names):
+            with col:
+                st.caption(_agent_status(name))
 
-st.divider()
+    # Show individual agent output cards
+    if st.session_state.agent_outputs:
+        st.markdown("---")
+        tabs = st.tabs(agent_names)
+        for tab, name in zip(tabs, agent_names):
+            with tab:
+                output = st.session_state.agent_outputs.get(name, "")
+                st.markdown(output)
+                st.caption(confidence_label(output))
 
-# ════════════════════════════════════════════════════════════════════════════
-# MODULE 4 — Synthesizer output
-# ════════════════════════════════════════════════════════════════════════════
-st.subheader("📋 Your GTM Plan")
+    st.divider()
 
-if st.session_state.agent_outputs and not st.session_state.final_plan:
-    with st.spinner("Synthesizer combining all agent outputs…"):
-        st.session_state.final_plan = _run_synthesizer(
-            st.session_state.selected_use_case,
-            st.session_state.context,
-            st.session_state.agent_outputs,
+    # ════════════════════════════════════════════════════════════════════════
+    # MODULE 4 — Synthesizer output
+    # ════════════════════════════════════════════════════════════════════════
+    st.subheader("📋 Your GTM Plan")
+
+    if st.session_state.agent_outputs and not st.session_state.final_plan:
+        with st.spinner("Synthesizer combining all agent outputs…"):
+            st.session_state.final_plan = _run_synthesizer(
+                st.session_state.selected_use_case,
+                st.session_state.context,
+                st.session_state.agent_outputs,
+            )
+
+    if st.session_state.final_plan:
+        st.markdown(st.session_state.final_plan)
+        st.divider()
+        st.code(st.session_state.final_plan)
+        st.download_button(
+            label="Download Plan",
+            data=st.session_state.final_plan,
+            file_name="gtm_plan.txt",
+            use_container_width=True,
         )
 
-if st.session_state.final_plan:
-    st.markdown(st.session_state.final_plan)
     st.divider()
-    st.code(st.session_state.final_plan)
-    st.download_button(
-        label="Download Plan",
-        data=st.session_state.final_plan,
-        file_name="gtm_plan.txt",
-        use_container_width=True,
-    )
-elif not st.session_state.form_submitted:
-    st.info("Describe your situation above and click **Build My GTM Plan** to generate your plan.")
 
-st.divider()
+    # ════════════════════════════════════════════════════════════════════════
+    # MODULE 5 — Step-by-step trace
+    # ════════════════════════════════════════════════════════════════════════
+    st.subheader("⑤ Execution Trace")
 
-# ════════════════════════════════════════════════════════════════════════════
-# MODULE 5 — Step-by-step trace
-# ════════════════════════════════════════════════════════════════════════════
-st.subheader("⑤ Execution Trace")
+    if st.session_state.trace_log:
+        with st.expander("View full trace log", expanded=False):
+            for line in st.session_state.trace_log:
+                st.text(line)
+    else:
+        st.caption("Trace log will appear here after the pipeline runs.")
 
-if st.session_state.trace_log:
-    with st.expander("View full trace log", expanded=False):
-        for line in st.session_state.trace_log:
-            st.text(line)
-else:
-    st.caption("Trace log will appear here after the pipeline runs.")
+    # ════════════════════════════════════════════════════════════════════════
+    # FOOTER — visible after processing
+    # ════════════════════════════════════════════════════════════════════════
+    st.divider()
+    st.caption("How this plan was built")
 
-# ════════════════════════════════════════════════════════════════════════════
-# FOOTER — always visible
-# ════════════════════════════════════════════════════════════════════════════
-st.divider()
-st.caption("How this plan was built")
-
-fc1, fc2, fc3 = st.columns(3)
-with fc1:
-    st.markdown("**5 specialist agents**")
-    st.caption("ICP · Signals · Pain · Positioning · Distribution\nEach reads your words, not a dropdown")
-with fc2:
-    st.markdown("**Fintech Payments signals**")
-    st.caption("Mock market data calibrated for 2025\nPayments buyer behavior and sales cycle norms")
-with fc3:
-    st.markdown("**One free-text input**")
-    st.caption("No forms. No use case selection.\nAgents extract what matters from your description")
+    fc1, fc2, fc3 = st.columns(3)
+    with fc1:
+        st.markdown("**5 specialist agents**")
+        st.caption("ICP · Signals · Pain · Positioning · Distribution\nEach reads your words, not a dropdown")
+    with fc2:
+        st.markdown("**Fintech Payments signals**")
+        st.caption("Mock market data calibrated for 2025\nPayments buyer behavior and sales cycle norms")
+    with fc3:
+        st.markdown("**One free-text input**")
+        st.caption("No forms. No use case selection.\nAgents extract what matters from your description")
