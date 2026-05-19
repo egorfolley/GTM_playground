@@ -4,16 +4,42 @@ Builds an Ideal Customer Profile for the given use case and context.
 import anthropic
 
 
-SYSTEM_PROMPT = """You are a B2B Fintech ICP (Ideal Customer Profile) specialist focused on payments SaaS.
-Your job: given a use case and company context, produce a crisp ICP definition covering:
-1. Firmographics: company size, industry sub-verticals, revenue range
-2. Technographics: existing stack signals, integration needs
-3. Trigger events that indicate buying intent (3–5 bullets)
-4. Champion persona (title, pain, what they care about)
-5. Economic buyer profile
-6. Negative ICP signals (who to avoid)
+SYSTEM_PROMPT = """You are an ICP specialist for Fintech B2B SaaS.
 
-Be precise. Use bullets. Max 350 words."""
+You will receive:
+1. The founder's description of their current customers and situation
+2. Market signal observations from Agent 1
+
+Derive the ICP only from what the founder has told you.
+Do not invent details the founder did not provide.
+
+If the founder mentioned their ACV, use it to infer company size.
+If they mentioned their buyer title, use it.
+If they did not mention something, say "not specified — recommend asking your best 3 customers."
+
+STRICT RULES:
+- Only make claims you can derive directly from the founder's input
+- Never invent company names, headcounts, or tech stacks
+- If you don't have enough data to be specific, ask for it explicitly
+- When uncertain, say "likely" or "typically" not "will" or "is"
+
+Output structure:
+
+COMPANY PROFILE
+What you can derive: [facts from founder input]
+What to validate: [what you don't know yet]
+
+BUYER MAP
+Economic buyer: [derive from input or say "not specified"]
+Champion: [derive from input or say "not specified"]
+Gatekeeper: [derive from input or say "not specified"]
+
+TRIGGER EVENTS
+Only list triggers the founder's input supports.
+Label each as: confirmed (founder mentioned it) or likely (typical for this vertical and stage).
+Maximum 3 trigger events.
+
+Max 350 words."""
 
 
 def run_icp_profiler(use_case: str, context: dict) -> str:

@@ -18,6 +18,7 @@ from app.sales_playbook import run_sales_playbook
 from app.metrics_forecaster import run_metrics_forecaster
 from app.synthesizer import run_synthesizer
 from app.signals import collect_signals
+from app.sources import MARKET_SIGNALS
 
 
 def _resolve_anthropic_api_key() -> str:
@@ -108,6 +109,22 @@ def _run_synthesizer(use_case: str, context: dict, agent_outputs: dict) -> str:
     return plan
 
 
+def confidence_label(agent_output: str) -> str:
+    """Calculate confidence indicator based on grounding language in agent output."""
+    uncertain_phrases = [
+        "not specified", "insufficient data", 
+        "recommend asking", "unknown"
+    ]
+    count = sum(1 for p in uncertain_phrases 
+                if p in agent_output.lower())
+    if count == 0:
+        return "🟢 High confidence — grounded in your input"
+    elif count <= 2:
+        return "🟡 Medium confidence — some gaps in input data"
+    else:
+        return "🔴 Low confidence — describe your situation in more detail"
+
+
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("🚀 Growth Goaled — $1M to $10M GTM Copilot")
@@ -155,24 +172,7 @@ if st.button("Build My GTM Plan"):
 
     signal_placeholder = st.empty()
 
-    sources = [
-        ("🟠", "Hacker News", "2h ago", 
-         "How I got my first 10 Fintech customers without a sales team"),
-        ("🔴", "Reddit r/fintech", "3h ago", 
-         "Cold outbound not converting in Payments — what changed?"),
-        ("🟠", "Hacker News", "6h ago", 
-         "Founder-led sales in Payments — what works at $1M ARR"),
-        ("🟢", "TechCrunch", "4h ago", 
-         "Fintech B2B sales cycles stretched 40% in 2025"),
-        ("🔴", "Reddit r/startups", "8h ago", 
-         "How do you find ICP signal before hiring your first AE?"),
-        ("🔵", "Crunchbase", "today", 
-         "Payments infrastructure — 14 Series A closes this month"),
-        ("🔴", "Reddit r/SaaS", "yesterday", 
-         "AE hired 3 months ago, zero closes — do I let them go?"),
-        ("🟠", "Hacker News", "yesterday", 
-         "Why most early Fintech outbound fails and how to fix it"),
-    ]
+    sources = MARKET_SIGNALS
 
     import time
     rendered = []
@@ -186,7 +186,7 @@ if st.button("Build My GTM Plan"):
         signal_placeholder.markdown("\n".join(lines))
         time.sleep(0.3)
 
-    st.success("✅ 8 signals collected from Hacker News, Reddit, Crunchbase, TechCrunch")
+    st.success(f"✅ {len(MARKET_SIGNALS)} signals collected from Hacker News, Reddit, Crunchbase, TechCrunch")
     time.sleep(0.5)
 
     # Step 2 — Agents run after signals displayed
@@ -242,6 +242,7 @@ if st.session_state.agent_outputs:
         with tab:
             output = st.session_state.agent_outputs.get(name, "")
             st.markdown(output)
+            st.caption(confidence_label(output))
 
 st.divider()
 
