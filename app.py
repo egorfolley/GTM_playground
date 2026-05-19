@@ -16,6 +16,7 @@ from app.icp_profiler import run_icp_profiler
 from app.channel_strategist import run_channel_strategist
 from app.sales_playbook import run_sales_playbook
 from app.metrics_forecaster import run_metrics_forecaster
+from app.input_evaluator import run_input_evaluator
 from app.synthesizer import run_synthesizer
 from app.signals import collect_signals
 from app.sources import MARKET_SIGNALS
@@ -63,6 +64,8 @@ if "context" not in st.session_state:
     st.session_state.context = {}
 if "trace_log" not in st.session_state:
     st.session_state.trace_log = []
+if "input_evaluation" not in st.session_state:
+    st.session_state.input_evaluation = None
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 AGENT_DEFINITIONS = [
@@ -154,6 +157,16 @@ founder_text = st.text_area(
     height=120,
 )
 
+if st.session_state.input_evaluation and not st.session_state.form_submitted:
+    evaluation = st.session_state.input_evaluation
+    st.warning("Not enough detail to build a reliable GTM plan yet.")
+    if evaluation.get("missing"):
+        st.caption("Please add:")
+        for item in evaluation.get("missing", []):
+            st.markdown(f"- {item}")
+    st.markdown("**Quick input template**")
+    st.text(evaluation.get("template", ""))
+
 if st.button("Build My GTM Plan"):
 
     # Input validation
@@ -161,12 +174,31 @@ if st.button("Build My GTM Plan"):
         st.warning("Please describe your situation in at least one sentence.")
         st.stop()
 
-    st.session_state.selected_use_case = founder_text.strip()
+    candidate_text = founder_text.strip()
+    evaluation = run_input_evaluator(candidate_text, {"situation": candidate_text})
+    st.session_state.input_evaluation = evaluation
+
+    if not evaluation.get("is_sufficient", False):
+        st.session_state.form_submitted = False
+        st.session_state.agent_outputs = {}
+        st.session_state.final_plan = ""
+        st.session_state.selected_use_case = None
+        st.session_state.context = {}
+        st.session_state.trace_log = []
+        st.warning("Input is not detailed enough yet. Use the template below and try again.")
+        if evaluation.get("reason"):
+            st.caption(evaluation.get("reason"))
+        st.markdown("**Quick input template**")
+        st.text(evaluation.get("template", ""))
+        st.stop()
+
+    st.session_state.selected_use_case = candidate_text
     st.session_state.form_submitted = True
     st.session_state.agent_outputs = {}
     st.session_state.final_plan = ""
     st.session_state.trace_log = []
-    st.session_state.context = {"situation": founder_text.strip()}
+    st.session_state.context = {"situation": candidate_text}
+    st.session_state.input_evaluation = None
 
     # Step 1 — Signal feed appears first, simulates live search
     st.markdown("#### 📡 Scanning market signals...")
