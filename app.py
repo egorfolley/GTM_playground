@@ -127,7 +127,8 @@ def confidence_label(agent_output: str) -> str:
 
 # ── UI ────────────────────────────────────────────────────────────────────────
 
-st.title("🚀 Growth Goaled — $1M to $10M GTM Copilot")
+st.title("AI GTM for Founders")
+st.caption("demo version")
 st.caption("**Fintech B2B SaaS · Payments vertical** — multi-agent strategy engine")
 st.divider()
 
