@@ -284,33 +284,12 @@ if st.button("Build My GTM Plan"):
 
     signal_count = len(st.session_state.context["signals"].get("sources", []))
     st.success(f"✅ {signal_count} signals collected from Hacker News, Reddit, Crunchbase, TechCrunch")
-
-    st.markdown("#### 📊 Source importance for this request")
-    importance_lines = []
-    for row in st.session_state.context.get("source_importance", []):
-        importance_lines.append(
-            f"- **{row['source']}**: {row['importance_pct']}% importance ({row['signal_count']} signals, {row['rationale']})"
-        )
-    st.markdown("\n".join(importance_lines))
     time.sleep(0.5)
 
 if st.session_state.form_submitted:
     st.divider()
 
-    step_3_status = "✅ Done" if st.session_state.agent_outputs else "🔄 Running"
-    step_4_status = "✅ Done" if st.session_state.final_plan else "🔄 Running"
-    st.markdown(
-        "\n".join(
-            [
-                "1. ✅ Input quality evaluated",
-                "2. ✅ Market signals scanned",
-                f"3. {step_3_status} Specialist agents executed",
-                f"4. {step_4_status} Final GTM plan synthesized",
-            ]
-        )
-    )
-
-    st.markdown("#### 📊 Source importance used in processing")
+    st.markdown("#### 📊 Source importance for this request")
     importance_lines = []
     for row in st.session_state.context.get("source_importance", []):
         importance_lines.append(
