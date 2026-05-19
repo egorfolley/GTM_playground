@@ -36,8 +36,22 @@ Max 350 words."""
 def run_market_intelligence(use_case: str, context: dict) -> str:
     """Run market intelligence agent and return markdown string."""
     client = anthropic.Anthropic()
+    signals = context.get("signals", {}).get("sources", [])
+    source_importance = context.get("source_importance", [])
+
+    signal_lines = [
+        f"- [{s.get('source', 'Unknown')}] {s.get('title', '')} ({s.get('time', '')})"
+        for s in signals
+    ]
+    importance_lines = [
+        f"- {row.get('source', 'Unknown')}: {row.get('importance_pct', 0)}%"
+        for row in source_importance
+    ]
+
     user_msg = (
         f"Company situation:\n{context.get('situation', use_case)}\n\n"
+        f"Step 2 market signals:\n{chr(10).join(signal_lines) if signal_lines else '- none provided'}\n\n"
+        f"Source importance for this request:\n{chr(10).join(importance_lines) if importance_lines else '- not provided'}\n\n"
         "Produce the market intelligence briefing."
     )
     message = client.messages.create(

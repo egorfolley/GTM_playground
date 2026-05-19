@@ -5,6 +5,7 @@ Fintech B2B SaaS · Payments vertical
 import time
 import concurrent.futures
 import os
+import re
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -19,7 +20,6 @@ from app.metrics_forecaster import run_metrics_forecaster
 from app.input_evaluator import run_input_evaluator
 from app.synthesizer import run_synthesizer
 from app.signals import collect_signals
-from app.sources import MARKET_SIGNALS
 
 
 def _resolve_anthropic_api_key() -> str:
@@ -128,6 +128,57 @@ def confidence_label(agent_output: str) -> str:
         return "🔴 Low confidence — describe your situation in more detail"
 
 
+def _keyword_set(text: str) -> set:
+    return set(re.findall(r"[a-z0-9]+", text.lower()))
+
+
+def _compute_source_importance(founder_text: str, signals: dict) -> list:
+    """Score each news source using baseline credibility + query relevance."""
+    base_weight = {
+        "Hacker News": 1.0,
+        "Reddit r/fintech": 0.9,
+        "Reddit r/startups": 0.8,
+        "Reddit r/SaaS": 0.8,
+        "TechCrunch": 1.1,
+        "Crunchbase News": 1.05,
+    }
+
+    founder_tokens = _keyword_set(founder_text)
+    by_source = {}
+
+    for item in signals.get("sources", []):
+        source = item.get("source", "Unknown")
+        title_tokens = _keyword_set(item.get("title", ""))
+        overlap = len(founder_tokens & title_tokens)
+        score = base_weight.get(source, 0.85) + (0.15 * overlap)
+
+        if source not in by_source:
+            by_source[source] = {
+                "source": source,
+                "score": 0.0,
+                "signal_count": 0,
+                "max_overlap": 0,
+            }
+        by_source[source]["score"] += score
+        by_source[source]["signal_count"] += 1
+        by_source[source]["max_overlap"] = max(by_source[source]["max_overlap"], overlap)
+
+    total_score = sum(v["score"] for v in by_source.values()) or 1.0
+    ranked = sorted(by_source.values(), key=lambda x: x["score"], reverse=True)
+
+    for item in ranked:
+        item["importance_pct"] = round((item["score"] / total_score) * 100, 1)
+        if item["max_overlap"] >= 3:
+            rationale = "high keyword match to founder request"
+        elif item["max_overlap"] >= 1:
+            rationale = "some keyword overlap with founder request"
+        else:
+            rationale = "baseline market context coverage"
+        item["rationale"] = rationale
+
+    return ranked
+
+
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("AI GTM for Founders")
@@ -204,7 +255,14 @@ if st.button("Build My GTM Plan"):
     st.session_state.agent_outputs = {}
     st.session_state.final_plan = ""
     st.session_state.trace_log = []
-    st.session_state.context = {"situation": candidate_text}
+    signals = collect_signals()
+    source_importance = _compute_source_importance(candidate_text, signals)
+
+    st.session_state.context = {
+        "situation": candidate_text,
+        "signals": signals,
+        "source_importance": source_importance,
+    }
     st.session_state.input_evaluation = None
 
     # Step 1 — Signal feed appears first, simulates live search
@@ -212,25 +270,29 @@ if st.button("Build My GTM Plan"):
 
     signal_placeholder = st.empty()
 
-    sources = MARKET_SIGNALS
-
     import time
     rendered = []
 
-    for icon, source, time_ago, title in sources:
-        rendered.append((icon, source, time_ago, title))
+    for item in st.session_state.context["signals"].get("sources", []):
+        rendered.append(item)
         lines = []
         for s in rendered:
-            lines.append(f"{s[0]} **{s[1]}** · {s[2]}")
-            lines.append(f"- {s[3]}")
+            lines.append(f"{s.get('icon', '•')} **{s.get('source', 'Unknown')}** · {s.get('time', '')}")
+            lines.append(f"- {s.get('title', '')}")
         signal_placeholder.markdown("\n".join(lines))
         time.sleep(0.3)
 
-    st.success(f"✅ {len(MARKET_SIGNALS)} signals collected from Hacker News, Reddit, Crunchbase, TechCrunch")
-    time.sleep(0.5)
+    signal_count = len(st.session_state.context["signals"].get("sources", []))
+    st.success(f"✅ {signal_count} signals collected from Hacker News, Reddit, Crunchbase, TechCrunch")
 
-    # Step 2 — Agents run after signals displayed
-    signals = collect_signals()
+    st.markdown("#### 📊 Source importance for this request")
+    importance_lines = []
+    for row in st.session_state.context.get("source_importance", []):
+        importance_lines.append(
+            f"- **{row['source']}**: {row['importance_pct']}% importance ({row['signal_count']} signals, {row['rationale']})"
+        )
+    st.markdown("\n".join(importance_lines))
+    time.sleep(0.5)
 
 if st.session_state.form_submitted:
     st.divider()
@@ -248,6 +310,15 @@ if st.session_state.form_submitted:
             ]
         )
     )
+
+    st.markdown("#### 📊 Source importance used in processing")
+    importance_lines = []
+    for row in st.session_state.context.get("source_importance", []):
+        importance_lines.append(
+            f"- **{row['source']}**: {row['importance_pct']}% importance ({row['signal_count']} signals, {row['rationale']})"
+        )
+    if importance_lines:
+        st.markdown("\n".join(importance_lines))
 
     st.divider()
 
