@@ -132,7 +132,6 @@ def confidence_label(agent_output: str) -> str:
 
 st.title("AI GTM for Founders")
 st.caption("demo version")
-st.caption("**Fintech B2B SaaS · Payments vertical** — multi-agent strategy engine")
 st.divider()
 
 if not ANTHROPIC_API_KEY:
@@ -145,7 +144,8 @@ if not ANTHROPIC_API_KEY:
 # ════════════════════════════════════════════════════════════════════════════
 # MODULE 1 — Situation input
 # ════════════════════════════════════════════════════════════════════════════
-st.subheader("① Describe Your Situation")
+if st.session_state.form_submitted:
+    st.subheader("① Describe Your Situation")
 
 founder_text = st.text_area(
     "Describe your situation",
