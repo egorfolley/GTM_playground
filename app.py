@@ -296,7 +296,6 @@ if st.button("Build My GTM Plan"):
 
 if st.session_state.form_submitted:
     st.divider()
-    st.subheader("② Logical Step-by-Step Actions")
 
     step_3_status = "✅ Done" if st.session_state.agent_outputs else "🔄 Running"
     step_4_status = "✅ Done" if st.session_state.final_plan else "🔄 Running"
