@@ -149,6 +149,46 @@ MARKET_SIGNALS = {
         ("🟢", "TechCrunch", "6h ago", "CAC payback stretching to 18 months — what top founders do"),
         ("🔴", "Reddit r/startups", "5h ago", "Mis-sequenced GTM hiring cost us $400K — what to do instead"),
     ],
+    "b2b": [
+        ("🟠", "Hacker News", "2h ago", "B2B sales motion in 2026 — what separates top quartile from the rest"),
+        ("🔴", "Reddit r/b2bsales", "3h ago", "Outbound reply rates hit 2% — is cold email finally dead?"),
+        ("🟠", "Hacker News", "5h ago", "How we built a repeatable B2B motion from founder-led in 6 months"),
+        ("🟢", "TechCrunch", "today", "B2B SaaS multiples recovering — Rule of 40 back as the benchmark"),
+        ("🔵", "Crunchbase", "today", "22 B2B SaaS Series A closes in May 2026 — vertical software leads"),
+        ("🔴", "Reddit r/startups", "4h ago", "Champion vs economic buyer — closing the wrong person killed 3 deals"),
+        ("🟠", "Hacker News", "yesterday", "B2B buying committees grew from 3 to 7 people — new playbook needed"),
+        ("🔴", "Reddit r/sales", "2h ago", "Proof of concept requests up 60% — buyers derisk everything now"),
+    ],
+    "software": [
+        ("🟠", "Hacker News", "1h ago", "Enterprise software sales — why the demo is killing your deal"),
+        ("🔴", "Reddit r/software", "3h ago", "SaaS pricing models shifting — usage-based beating seat licenses"),
+        ("🟠", "Hacker News", "4h ago", "Software consolidation wave — buyers cutting from 15 tools to 6"),
+        ("🟢", "TechCrunch", "today", "Vertical software valuations up 40% — horizontal plays under pressure"),
+        ("🔵", "Crunchbase", "today", "19 software Series A closes this month — workflow tools dominate"),
+        ("🔴", "Reddit r/startups", "5h ago", "Software implementation risk — #1 reason enterprise deals stall"),
+        ("🟠", "Hacker News", "yesterday", "PLG ceiling at $2M ARR — when to layer sales on top of product"),
+        ("🔴", "Reddit r/SaaS", "2h ago", "Annual vs monthly billing — what actually moves conversion rate"),
+    ],
+    "ai_company": [
+        ("🟠", "Hacker News", "1h ago", "AI product GTM — selling outcomes not models is the only motion"),
+        ("🔴", "Reddit r/MachineLearning", "2h ago", "AI buyer fatigue is real — 80% of pilots never reach production"),
+        ("🟠", "Hacker News", "3h ago", "How we went from AI demo to $1M ARR without a sales team"),
+        ("🟢", "TechCrunch", "today", "AI startup funding hits $47B in Q1 2026 — application layer leads"),
+        ("🔵", "Crunchbase", "today", "34 AI SaaS Series A closes this month — vertical AI dominates"),
+        ("🔴", "Reddit r/startups", "4h ago", "AI pricing — per seat per output or percentage of value captured?"),
+        ("🟠", "Hacker News", "yesterday", "Enterprise AI procurement added 3 new gates — legal ethics security"),
+        ("🔴", "Reddit r/artificial", "2h ago", "AI hallucination liability — new blocker in regulated industry sales"),
+    ],
+    "data_company": [
+        ("🟠", "Hacker News", "2h ago", "Data infrastructure GTM — selling to engineers vs selling to VPs"),
+        ("🔴", "Reddit r/dataengineering", "3h ago", "Modern data stack consolidation — buyers picking 2 tools not 8"),
+        ("🟠", "Hacker News", "5h ago", "How we sold a data platform to enterprises with no sales team"),
+        ("🟢", "TechCrunch", "today", "Data tooling investment up 38% — governance and quality lead"),
+        ("🔵", "Crunchbase", "today", "15 data infrastructure Series A closes — observability and quality top"),
+        ("🔴", "Reddit r/datascience", "4h ago", "Data buyer is now the CDO not the CTO — GTM motion has to shift"),
+        ("🟠", "Hacker News", "yesterday", "Bottom-up data tool adoption — how to convert free users to enterprise"),
+        ("🔴", "Reddit r/dataengineering", "2h ago", "Data contract standards emerging — new compliance buying trigger"),
+    ],
 }
 
 _KEYWORD_MAP = [
@@ -174,6 +214,29 @@ def get_signals(vertical: str, sub_vertical: str) -> list:
     for key, keywords in _KEYWORD_MAP:
         if any(kw in combined for kw in keywords):
             return MARKET_SIGNALS[key]
+        
+        elif any(w in combined for w in
+             ["b2b", "business to business",
+              "enterprise sales", "b2b sales"]):
+            return MARKET_SIGNALS["b2b"]
+        
+        elif any(w in combined for w in
+                ["software", "saas", "platform",
+                "application", "workflow"]):
+            return MARKET_SIGNALS["software"]
+        
+        elif any(w in combined for w in
+                ["ai", "artificial intelligence",
+                "machine learning", "llm", "generative",
+                "model", "ml"]):
+            return MARKET_SIGNALS["ai_company"]
+        
+        elif any(w in combined for w in
+                ["data", "analytics", "pipeline",
+                "warehouse", "lakehouse", "etl",
+                "bi", "intelligence"]):
+            return MARKET_SIGNALS["data_company"]
+            
     return MARKET_SIGNALS["general"]
 
 
