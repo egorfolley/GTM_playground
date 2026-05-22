@@ -211,32 +211,26 @@ _KEYWORD_MAP = [
 
 def get_signals(vertical: str, sub_vertical: str) -> list:
     combined = (f"{vertical or ''} {sub_vertical or ''}").lower()
+
+    # 1. Specific vertical keyword match
     for key, keywords in _KEYWORD_MAP:
         if any(kw in combined for kw in keywords):
             return MARKET_SIGNALS[key]
-        
-        elif any(w in combined for w in
-             ["b2b", "business to business",
-              "enterprise sales", "b2b sales"]):
-            return MARKET_SIGNALS["b2b"]
-        
-        elif any(w in combined for w in
-                ["software", "saas", "platform",
-                "application", "workflow"]):
-            return MARKET_SIGNALS["software"]
-        
-        elif any(w in combined for w in
-                ["ai", "artificial intelligence",
-                "machine learning", "llm", "generative",
-                "model", "ml"]):
-            return MARKET_SIGNALS["ai_company"]
-        
-        elif any(w in combined for w in
-                ["data", "analytics", "pipeline",
-                "warehouse", "lakehouse", "etl",
-                "bi", "intelligence"]):
-            return MARKET_SIGNALS["data_company"]
-            
+
+    # 2. Broad software / SaaS / AI / data fallback → devtools signals
+    _software_keywords = [
+        "software", "saas", "platform", "application", "app",
+        "workflow", "implementation", "integration", "automation",
+        "api", "tool", "plugin", "extension", "ai", "ml",
+        "artificial intelligence", "machine learning", "llm",
+        "generative", "model", "data", "analytics", "pipeline",
+        "warehouse", "lakehouse", "etl", "bi", "intelligence",
+        "b2b", "enterprise", "tech",
+    ]
+    if any(kw in combined for kw in _software_keywords):
+        return MARKET_SIGNALS["devtools"]
+
+    # 3. Ultimate fallback
     return MARKET_SIGNALS["general"]
 
 
