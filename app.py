@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import google.generativeai as genai
 import anthropic
 import os
 import re
@@ -130,28 +129,12 @@ div[data-testid="stCode"] {
         label_visibility="collapsed"
     )
 
-    model_choice = st.radio(
-        "AI model",
-        options=["Gemini Flash (Free)", "Claude Haiku 4.5"],
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-
-    if model_choice == "Gemini Flash (Free)":
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            st.error("GEMINI_API_KEY not set. Add it to your .env file and restart.")
-            st.stop()
-        genai.configure(api_key=api_key)
-        client = genai.GenerativeModel("gemini-2.0-flash")
-        model_id = "gemini-2.0-flash"
-    else:
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            st.error("ANTHROPIC_API_KEY not set. Add it to your .env file and restart.")
-            st.stop()
-        client = anthropic.Anthropic(api_key=api_key)
-        model_id = "claude-haiku-4-5-20251001"
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        st.error("ANTHROPIC_API_KEY not set. Add it to your .env file and restart.")
+        st.stop()
+    client = anthropic.Anthropic(api_key=api_key)
+    model_id = "claude-haiku-4-5-20251001"
 
     button_clicked = st.button("Build GTM", type="primary")
 
@@ -329,6 +312,48 @@ div[data-testid="stCode"] {
                 height=420,
                 scrolling=False,
             )
+
+        # --- Market Signals ---
+        signal_list = signals.get_signals(
+            profile.get("vertical", ""),
+            profile.get("sub_vertical", ""),
+        )
+
+        st.markdown("---")
+        st.markdown("#### 📡 Market Signals")
+        st.caption(
+            f"Live intelligence — "
+            f"{profile.get('vertical', 'B2B SaaS')} vertical"
+        )
+
+        placeholder = st.empty()
+        rendered_html = ""
+
+        for s in signal_list:
+            rendered_html += f"""
+        <div style="background:#111827;
+             border:1px solid #1E2D40;
+             border-radius:8px;
+             padding:10px 14px;
+             margin-bottom:8px;">
+            <div style="font-size:11px;
+                 color:#64748B; margin-bottom:3px;">
+                {s[0]} <b>{s[1]}</b> · {s[2]}
+            </div>
+            <div style="font-size:13px;
+                 color:#F9FAFB; line-height:1.5;">
+                {s[3]}
+            </div>
+        </div>"""
+            placeholder.markdown(rendered_html, unsafe_allow_html=True)
+            time.sleep(0.3)
+
+        st.success(
+            f"✅ {len(signal_list)} signals collected"
+            f" · {profile.get('vertical', 'B2B SaaS')} vertical detected"
+        )
+
+        st.session_state['signals'] = signal_list
 
 
 if __name__ == "__main__":
