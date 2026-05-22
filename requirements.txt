@@ -1,7 +1,6 @@
 altair==6.1.0
 annotated-types==0.7.0
 anthropic
-google-generativeai
 anyio==4.13.0
 attrs==26.1.0
 beautifulsoup4==4.14.2
@@ -31,7 +30,6 @@ packaging==26.2
 pandas==3.0.2
 pillow==12.2.0
 plotly==6.7.0
-protobuf==7.34.1
 pyarrow==24.0.0
 pydantic==2.13.4
 pydantic_core==2.46.4

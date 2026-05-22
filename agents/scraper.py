@@ -77,19 +77,12 @@ def extract_profile(
 
         full_prompt = f"{system_prompt}\n\n{user_message}"
 
-        # Dispatch based on client type
-        if hasattr(client, "generate_content"):
-            # Google Gemini
-            response = client.generate_content(full_prompt)
-            text = response.text
-        else:
-            # Anthropic
-            response = client.messages.create(
-                model=model,
-                max_tokens=1024,
-                messages=[{"role": "user", "content": full_prompt}],
-            )
-            text = response.content[0].text
+        response = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            messages=[{"role": "user", "content": full_prompt}],
+        )
+        text = response.content[0].text
 
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
