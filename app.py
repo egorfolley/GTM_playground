@@ -12,7 +12,7 @@ client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 def main():
     st.set_page_config(
-        page_title="Growth Goaled",
+        page_title="AI GTM | Growth Goaled",
         page_icon="🎯",
         layout="wide"
     )
@@ -128,7 +128,18 @@ div[data-testid="stCode"] {
         label_visibility="collapsed"
     )
 
-    st.button("Build My GTM Snapshot →", type="primary")
+    button_clicked = st.button("Build GTM", type="primary")
+
+    if button_clicked and founder_text:
+        url_match = re.search(r'https?://[^\s·,]+', founder_text)
+        url = url_match.group() if url_match else ""
+
+        with st.spinner("Reading your website..."):
+            homepage = scraper.scrape_url(url)
+            profile = scraper.extract_profile(founder_text, homepage, client)
+
+        st.session_state['profile'] = profile
+        print(profile)
 
 if __name__ == "__main__":
     main()
