@@ -536,10 +536,11 @@ div[data-testid="stCode"] {
 
         st.markdown("#### ⚡ Positioning")
 
-        st.markdown(f"""
+        components.html(f"""
 <div style="background:#111827;
      border:1px solid #1E2D40;
-     border-radius:10px; padding:24px;">
+     border-radius:10px; padding:24px;
+     font-family:'Inter',sans-serif;">
 
     <div style="color:#D4A843; font-size:10px;
          font-weight:700; text-transform:uppercase;
@@ -584,7 +585,7 @@ div[data-testid="stCode"] {
         {escape(str(pos.get('objection_response', '—')))}
     </div>
 
-</div>""", unsafe_allow_html=True)
+</div>""", height=320, scrolling=False)
 
         # --- Distribution ---
         st.markdown("---")
