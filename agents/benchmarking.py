@@ -40,5 +40,6 @@ def run(profile: dict, client) -> dict:
         if not match:
             return {}
         return json.loads(match.group(0))
+    
     except Exception:
         return {}
