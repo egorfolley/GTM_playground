@@ -129,10 +129,91 @@ div[data-testid="stCode"] {
         label_visibility="collapsed"
     )
 
+    def display_text(value):
+        if value is None:
+            return "—"
+        text = str(value).strip()
+        return text if text else "—"
+
+
+    def display_int(value):
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            cleaned = value.replace(",", "").strip()
+            if cleaned.isdigit():
+                return int(cleaned)
+        return None
+
+
+    snapshot_profile = st.session_state.get('profile', {}) or {}
+    snapshot_founding_year = display_int(snapshot_profile.get('founding_year'))
+    snapshot_acv = display_int(snapshot_profile.get('acv'))
+    snapshot_sales_cycle_days = display_int(snapshot_profile.get('sales_cycle_days'))
+    snapshot_arr = display_int(snapshot_profile.get('arr'))
+    snapshot_sales_motion = display_text(snapshot_profile.get('sales_motion'))
+    snapshot_vertical = display_text(snapshot_profile.get('vertical'))
+
+    snapshot_metrics = [
+        ("Founded", str(snapshot_founding_year) if snapshot_founding_year is not None else "—"),
+        (
+            "Average Deal Size (ACV)",
+            f"${snapshot_acv:,}" if snapshot_acv is not None else "—",
+        ),
+        (
+            "Sales Cycle Length",
+            f"{snapshot_sales_cycle_days} days" if snapshot_sales_cycle_days is not None else "—",
+        ),
+        (
+            "Annual Recurring Revenue (ARR)",
+            f"${snapshot_arr:,}" if snapshot_arr is not None else "—",
+        ),
+        ("Sales Approach", snapshot_sales_motion),
+        ("Industry", snapshot_vertical),
+    ]
+
+    snapshot_metric_blocks = ""
+    for label, value in snapshot_metrics:
+        safe_label = escape(label)
+        safe_value = escape(value)
+        snapshot_metric_blocks += f"""
+<div style=\"margin-bottom:14px;\">
+    <div style=\"color:#64748B; font-size:10px;
+         font-weight:700; text-transform:uppercase;
+         letter-spacing:0.08em;\">
+        {safe_label}
+    </div>
+    <div style=\"color:#F9FAFB; font-size:15px;
+         font-weight:600; margin-top:3px;\">
+        {safe_value}
+    </div>
+</div>
+"""
+
+    components.html(
+        f"""
+<div style="background:#111827; border:1px solid #1E2D40;
+     border-radius:10px; padding:24px; margin-bottom:18px;">
+
+    <div style="color:#D4A843; font-size:11px;
+         font-weight:700; letter-spacing:0.1em;
+         text-transform:uppercase; margin-bottom:16px;">
+        Business Snapshot
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+        {snapshot_metric_blocks}
+    </div>
+</div>
+""",
+        height=320,
+        scrolling=False,
+    )
+
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         st.error("ANTHROPIC_API_KEY not set. Add it to your .env file and restart.")
-        st.stop()
+        # st.stop()
     client = anthropic.Anthropic(api_key=api_key)
     model_id = "claude-haiku-4-5-20251001"
 
@@ -159,21 +240,6 @@ div[data-testid="stCode"] {
     if 'profile' in st.session_state:
         profile = st.session_state.get('profile', {}) or {}
 
-        def display_text(value):
-            if value is None:
-                return "—"
-            text = str(value).strip()
-            return text if text else "—"
-
-        def display_int(value):
-            if isinstance(value, int):
-                return value
-            if isinstance(value, str):
-                cleaned = value.replace(",", "").strip()
-                if cleaned.isdigit():
-                    return int(cleaned)
-            return None
-
         vertical = display_text(profile.get('vertical'))
         sub_vertical = display_text(profile.get('sub_vertical'))
         company_name = display_text(profile.get('company_name'))
@@ -188,56 +254,11 @@ div[data-testid="stCode"] {
         problem_safe = escape(problem)
         solution_safe = escape(solution)
 
-        founding_year = display_int(profile.get('founding_year'))
-        acv = display_int(profile.get('acv'))
-        sales_cycle_days = display_int(profile.get('sales_cycle_days'))
-        arr = display_int(profile.get('arr'))
-        sales_motion = display_text(profile.get('sales_motion'))
-
-        metrics = [
-            ("Founded", str(founding_year) if founding_year is not None else "—"),
-            (
-                "Average Deal Size (ACV)",
-                f"${acv:,}" if acv is not None else "—",
-            ),
-            (
-                "Sales Cycle Length",
-                f"{sales_cycle_days} days" if sales_cycle_days is not None else "—",
-            ),
-            (
-                "Annual Recurring Revenue (ARR)",
-                f"${arr:,}" if arr is not None else "—",
-            ),
-            ("Sales Approach", sales_motion),
-            ("Industry", vertical),
-        ]
-
-        metric_blocks = ""
-        for label, value in metrics:
-            safe_label = escape(label)
-            safe_value = escape(value)
-            metric_blocks += f"""
-    <div style=\"margin-bottom:14px;\">
-        <div style=\"color:#64748B; font-size:10px;
-             font-weight:700; text-transform:uppercase;
-             letter-spacing:0.08em;\">
-            {safe_label}
-        </div>
-        <div style=\"color:#F9FAFB; font-size:15px;
-             font-weight:600; margin-top:3px;\">
-            {safe_value}
-        </div>
-    </div>
-"""
-
         st.markdown("---")
         st.markdown("#### Company Profile")
 
-        left_col, right_col = st.columns([2, 1])
-
-        with left_col:
-            components.html(
-                f"""
+        components.html(
+            f"""
 <div style="background:#111827; border:1px solid #1E2D40;
      border-radius:10px; padding:24px; height:100%;">
 
@@ -290,28 +311,9 @@ div[data-testid="stCode"] {
     </div>
 </div>
 """,
-                height=420,
-                scrolling=False,
-            )
-
-        with right_col:
-            components.html(
-                f"""
-<div style="background:#111827; border:1px solid #1E2D40;
-     border-radius:10px; padding:24px; height:100%;">
-
-    <div style="color:#D4A843; font-size:11px;
-         font-weight:700; letter-spacing:0.1em;
-         text-transform:uppercase; margin-bottom:16px;">
-        Business Snapshot
-    </div>
-
-    {metric_blocks}
-</div>
-""",
-                height=420,
-                scrolling=False,
-            )
+            height=420,
+            scrolling=False,
+        )
 
         # --- Market Signals ---
         signal_list = signals.get_signals(
