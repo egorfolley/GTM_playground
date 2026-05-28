@@ -145,6 +145,32 @@ div[data-testid="stCode"] {
                 return int(cleaned)
         return None
 
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        st.error("ANTHROPIC_API_KEY not set. Add it to your .env file and restart.")
+        # st.stop()
+    client = anthropic.Anthropic(api_key=api_key)
+    model_id = "claude-haiku-4-5-20251001"
+
+    button_clicked = st.button("Build GTM", type="primary")
+
+    if button_clicked and founder_text:
+        # Step 1: extract URL from input
+        url_match = re.search(r'https?://[^\s·,]+', founder_text)
+        url = url_match.group() if url_match else ""
+
+        # Step 2: scrape the URL
+        with st.spinner("Reading your website..."):
+            homepage = scraper.scrape_url(url)
+
+        # Step 3: run AI on founder text + homepage
+        with st.spinner("Analyzing with AI..."):
+            profile, error = scraper.extract_profile(founder_text, homepage, client, model=model_id)
+
+        if error:
+            st.error(f"AI error: {error}")
+        else:
+            st.session_state['profile'] = profile
 
     snapshot_profile = st.session_state.get('profile', {}) or {}
     snapshot_founding_year = display_int(snapshot_profile.get('founding_year'))
@@ -172,22 +198,24 @@ div[data-testid="stCode"] {
         ("Industry", snapshot_vertical),
     ]
 
-    snapshot_metric_blocks = ""
+    snapshot_metric_rows = ""
     for label, value in snapshot_metrics:
         safe_label = escape(label)
         safe_value = escape(value)
-        snapshot_metric_blocks += f"""
-<div style=\"margin-bottom:14px;\">
-    <div style=\"color:#64748B; font-size:10px;
-         font-weight:700; text-transform:uppercase;
-         letter-spacing:0.08em;\">
+        snapshot_metric_rows += f"""
+<tr>
+    <td style=\"padding:10px 12px; color:#64748B;
+        font-size:11px; font-weight:700;
+        text-transform:uppercase; letter-spacing:0.08em;
+        border-bottom:1px solid #1E2D40; width:48%;\">
         {safe_label}
-    </div>
-    <div style=\"color:#F9FAFB; font-size:15px;
-         font-weight:600; margin-top:3px;\">
+    </td>
+    <td style=\"padding:10px 12px; color:#F9FAFB;
+        font-size:14px; font-weight:600;
+        border-bottom:1px solid #1E2D40;\">
         {safe_value}
-    </div>
-</div>
+    </td>
+</tr>
 """
 
     components.html(
@@ -198,44 +226,18 @@ div[data-testid="stCode"] {
     <div style="color:#D4A843; font-size:11px;
          font-weight:700; letter-spacing:0.1em;
          text-transform:uppercase; margin-bottom:16px;">
-        Business Snapshot
+        BUSINESS SNAPSHOT
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
-        {snapshot_metric_blocks}
-    </div>
+    <table style="width:100%; border-collapse:collapse;
+           border:1px solid #1E2D40; border-radius:8px; overflow:hidden;">
+        {snapshot_metric_rows}
+    </table>
 </div>
 """,
-        height=320,
+        height=360,
         scrolling=False,
     )
-
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        st.error("ANTHROPIC_API_KEY not set. Add it to your .env file and restart.")
-        # st.stop()
-    client = anthropic.Anthropic(api_key=api_key)
-    model_id = "claude-haiku-4-5-20251001"
-
-    button_clicked = st.button("Build GTM", type="primary")
-
-    if button_clicked and founder_text:
-        # Step 1: extract URL from input
-        url_match = re.search(r'https?://[^\s·,]+', founder_text)
-        url = url_match.group() if url_match else ""
-
-        # Step 2: scrape the URL
-        with st.spinner("Reading your website..."):
-            homepage = scraper.scrape_url(url)
-
-        # Step 3: run AI on founder text + homepage
-        with st.spinner("Analyzing with AI..."):
-            profile, error = scraper.extract_profile(founder_text, homepage, client, model=model_id)
-
-        if error:
-            st.error(f"AI error: {error}")
-        else:
-            st.session_state['profile'] = profile
 
     if 'profile' in st.session_state:
         profile = st.session_state.get('profile', {}) or {}
