@@ -1,13 +1,13 @@
 # Growth Goaled Frontend
 
-React UI for the GTM planner. It expects the Python FastAPI API in `../api.py`.
+React UI for the GTM planner. It expects the Python FastAPI API in `../backend/app/main.py`.
 
 ## Run
 
 From the repo root:
 
 ```bash
-uvicorn api:app --reload --port 8000
+uvicorn backend.app.main:app --reload --port 8000
 ```
 
 From this folder:

@@ -7,7 +7,7 @@ export async function buildGtm(founderText) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.error || "Unable to build GTM plan");
+    throw new Error(data.error || data.detail || "Unable to build GTM plan");
   }
   return data;
 }
