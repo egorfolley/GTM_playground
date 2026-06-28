@@ -1,2 +1,6 @@
+[project]
+name = "gtm-playground"
+version = "0.1.0"
+
 [tool.vercel]
 entrypoint = "backend.app.main:app"
