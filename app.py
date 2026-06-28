@@ -7,7 +7,7 @@ import json
 import time
 from html import escape
 from dotenv import load_dotenv
-from agents import scraper, signals, benchmarking, icp, positioning, distribution, actions
+from backend.agents import scraper, signals, benchmarking, icp, positioning, distribution, actions
 
 load_dotenv()
 
