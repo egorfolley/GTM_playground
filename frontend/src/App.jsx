@@ -13,6 +13,69 @@ import { buildGtm } from "./api";
 
 const emptyResult = null;
 
+const SEP = " — ";
+const STEPS = [
+  {
+    name: "Website URL",
+    label: "https://yourcompany.com",
+    detect: (v) => /https?:\/\/|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(v),
+  },
+  {
+    name: "Year Founded",
+    label: "2022",
+    detect: (v) => /\b(19|20)\d{2}\b/.test(v),
+  },
+  {
+    name: "ACV Size",
+    label: "ACV $20K",
+    detect: (v) => /\bacv\b|\$\s*\d+\s*k\b/i.test(v),
+  },
+  {
+    name: "Sales Cycle",
+    label: "60-day cycle",
+    detect: (v) => /\d+[\s-]?day/i.test(v),
+  },
+  {
+    name: "Current Revenue",
+    label: "$1M ARR",
+    detect: (v) => /\barr\b|\$[\d.]+\s*[mb]\b/i.test(v),
+  },
+  {
+    name: "Sales Channel",
+    label: "Founder-led",
+    detect: (v) => /founder.?led|outbound|inbound|\bplg\b|mixed/i.test(v),
+  },
+];
+
+function getGhostSuggestion(value) {
+  if (!value.trim()) return "";
+  const missing = STEPS.filter((step) => !step.detect(value));
+  if (missing.length === 0) return "";
+  return SEP + missing.map((s) => s.label).join(SEP);
+}
+
+function SmartInput({ value, onChange, disabled }) {
+  const ghost = getGhostSuggestion(value);
+  return (
+    <div className="smart-input-wrap">
+      {ghost && (
+        <div className="smart-input-ghost" aria-hidden="true">
+          <span className="ghost-typed">{value}</span>
+          <span className="ghost-hint">{ghost}</span>
+        </div>
+      )}
+      <input
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        placeholder="https://yourcompany.com — 2022 — ACV $20K — 60-day cycle — $1M ARR — Founder-led"
+        autoComplete="off"
+        spellCheck="false"
+      />
+    </div>
+  );
+}
+
 function displayText(value) {
   if (value === null || value === undefined || String(value).trim() === "") {
     return "-";
@@ -356,11 +419,22 @@ export default function App() {
         <p className="hero-copy">
           Describe your company. Get a GTM plan grounded in your numbers.
         </p>
+        <div className="input-fields-hint">
+          {STEPS.map((step, i) => {
+            const filled = step.detect(founderText);
+            return (
+              <span key={step.name} className={filled ? "hint-filled" : ""}>
+                {i > 0 && <span className="hint-sep">·</span>}
+                {step.name}
+              </span>
+            );
+          })}
+        </div>
         <form className="search" onSubmit={onSubmit}>
-          <input
+          <SmartInput
             value={founderText}
             onChange={(event) => setFounderText(event.target.value)}
-            placeholder="https://acme.com - 2022 - ACV $18K - 60-day cycle - $1.2M ARR - Founder-led"
+            disabled={loading}
           />
           <button type="submit" disabled={loading || !founderText.trim()}>
             {loading ? <Loader2 className="spin" size={17} /> : <Rocket size={17} />}
