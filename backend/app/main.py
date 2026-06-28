@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.agents import actions, benchmarking, distribution, icp, positioning, scraper, signals
+from backend.agents import benchmarking, scraper, signals
 
 load_dotenv()
 
@@ -39,10 +39,6 @@ def _display_int(value):
 def _build_snapshot(payload: dict) -> str:
     profile = payload.get("profile", {}) or {}
     bench = payload.get("benchmarking", {}) or {}
-    icp_data = payload.get("icp", {}) or {}
-    pos = payload.get("positioning", {}) or {}
-    dist = payload.get("distribution", {}) or {}
-    act = payload.get("actions", {}) or {}
 
     arr = _display_int(profile.get("arr")) or 0
     acv = _display_int(profile.get("acv")) or 0
@@ -66,36 +62,6 @@ BENCHMARKING
 Overall Percentile: {bench.get('overall_percentile', '')}
 Biggest Gap: {bench.get('biggest_gap', '')}
 Highest Leverage: {bench.get('highest_leverage_lever', '')}
-
-ICP
-{icp_data.get('company_profile', '')}
-Buyer: {icp_data.get('buyer_title', '')}
-Champion: {icp_data.get('champion_title', '')}
-Trigger: {icp_data.get('trigger_event', '')}
-Avoid: {icp_data.get('negative_icp', '')}
-
-POSITIONING
-Wedge: {pos.get('wedge', '')}
-ROI: {pos.get('roi', '')}
-Objection: {pos.get('objection', '')}
-Response: {pos.get('objection_response', '')}
-
-DISTRIBUTION
-Engine 1: {dist.get('engine_1', {}).get('channel', '')}
-{dist.get('engine_1', {}).get('action', '')}
-Engine 2: {dist.get('engine_2', {}).get('channel', '')}
-{dist.get('engine_2', {}).get('action', '')}
-Engine 3: {dist.get('engine_3', {}).get('channel', '')}
-{dist.get('engine_3', {}).get('action', '')}
-
-EXECUTION
-This week:
-1. {act.get('action_1', '')}
-2. {act.get('action_2', '')}
-3. {act.get('action_3', '')}
-Day 30: {act.get('day_30', '')}
-Day 60: {act.get('day_60', '')}
-Day 90: {act.get('day_90', '')}
 """
 
 
@@ -142,10 +108,6 @@ async def build_gtm(request: BuildGtmRequest):
                 for tone, source, signal_time, title in signal_list
             ],
             "benchmarking": benchmarking.run(profile, client),
-            "icp": icp.run(profile, signal_list, client),
-            "positioning": positioning.run(profile, signal_list, client),
-            "distribution": distribution.run(profile, signal_list, client),
-            "actions": actions.run(profile, signal_list, client),
         }
         payload["snapshot"] = _build_snapshot(payload)
         return payload

@@ -1,12 +1,10 @@
 import {
   BarChart3,
-  Check,
   Download,
   Loader2,
   Radio,
   Rocket,
   Target,
-  Zap,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { buildGtm } from "./api";
@@ -258,116 +256,6 @@ function Benchmarking({ result }) {
   );
 }
 
-function Icp({ result }) {
-  const data = result.icp || {};
-  const fields = [
-    ["Company Profile", data.company_profile],
-    ["Economic Buyer", data.buyer_title],
-    ["Champion", data.champion_title],
-    ["Trigger Event", data.trigger_event],
-    ["Who to Avoid", data.negative_icp],
-  ];
-
-  return (
-    <section className="section">
-      <SectionTitle title="Your ICP" icon={Target} />
-      <div className="stack">
-        {fields.map(([label, value]) => (
-          <article className="panel compact" key={label}>
-            <div className="eyebrow">{label}</div>
-            <p>{displayText(value)}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Positioning({ result }) {
-  const pos = result.positioning || {};
-  return (
-    <section className="section">
-      <SectionTitle title="Positioning" icon={Zap} />
-      <article className="panel positioning">
-        <div className="eyebrow">Wedge</div>
-        <h3>{displayText(pos.wedge)}</h3>
-        <div className="eyebrow">ROI</div>
-        <p>{displayText(pos.roi)}</p>
-        <div className="divider" />
-        <div className="objection-grid">
-          <div>
-            <div className="eyebrow danger-text">Top Objection</div>
-            <p>{displayText(pos.objection)}</p>
-          </div>
-          <div>
-            <div className="eyebrow good-text">Response</div>
-            <p>{displayText(pos.objection_response)}</p>
-          </div>
-        </div>
-      </article>
-    </section>
-  );
-}
-
-function Distribution({ result }) {
-  const dist = result.distribution || {};
-  const engines = [dist.engine_1 || {}, dist.engine_2 || {}, dist.engine_3 || {}];
-  return (
-    <section className="section">
-      <SectionTitle title="Distribution Engines" icon={Rocket} />
-      <div className="three-col">
-        {engines.map((engine, index) => (
-          <article className="panel compact" key={index}>
-            <h3>{displayText(engine.channel)}</h3>
-            <p>{displayText(engine.rationale)}</p>
-            <div className="next-step">{displayText(engine.action)}</div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Actions({ result }) {
-  const data = result.actions || {};
-  const actions = [data.action_1, data.action_2, data.action_3];
-  const milestones = [
-    ["Day 30", data.day_30],
-    ["Day 60", data.day_60],
-    ["Day 90", data.day_90],
-  ];
-
-  return (
-    <section className="section">
-      <SectionTitle title="Execution Plan" icon={Check} />
-      <div className="execution-grid">
-        <article>
-          <h3>This Week</h3>
-          <div className="stack">
-            {actions.map((action, index) => (
-              <div className="action-item" key={index}>
-                <Check size={16} />
-                <span>{displayText(action)}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-        <article>
-          <h3>90-Day Milestones</h3>
-          <div className="timeline">
-            {milestones.map(([day, value]) => (
-              <div className="milestone" key={day}>
-                <strong>{day}</strong>
-                <p>{displayText(value)}</p>
-              </div>
-            ))}
-          </div>
-        </article>
-      </div>
-    </section>
-  );
-}
-
 function DownloadSnapshot({ result }) {
   const href = useMemo(() => {
     const blob = new Blob([result.snapshot || ""], { type: "text/plain" });
@@ -456,10 +344,6 @@ export default function App() {
           <CompanyProfile profile={result.profile || {}} />
           <Signals result={result} />
           <Benchmarking result={result} />
-          <Icp result={result} />
-          <Positioning result={result} />
-          <Distribution result={result} />
-          <Actions result={result} />
           <DownloadSnapshot result={result} />
         </>
       ) : null}
